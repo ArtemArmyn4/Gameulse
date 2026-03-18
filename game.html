@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GamePulse — Игра</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Firebase import map -->
+    <script type="importmap">
+        {
+            "imports": {
+                "firebase/app": "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js",
+                "firebase/firestore": "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js",
+                "firebase/auth": "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js"
+            }
+        }
+    </script>
+</head>
+<body>
+    <nav>
+        <a href="index.html#gamesSection" style="color: var(--accent); text-decoration: none; font-size: 1.2rem; margin-left: 2rem;">⬅ Назад к играм</a>
+        <a href="index.html" style="color: var(--text); text-decoration: none; font-size: 1.2rem; margin-left: 2rem;">🏠 Главная</a>
+    </nav>
+
+    <div id="gamePage" class="section">
+        <h1 id="gameTitle"></h1>
+
+        <!-- Трейлер -->
+        <div class="trailer">
+            <iframe id="gameTrailer" width="800" height="400" frameborder="0" allowfullscreen></iframe>
+        </div>
+
+        <!-- Описание -->
+        <p id="gameDescription" style="margin: 20px 0;"></p>
+
+        <!-- Требования -->
+        <div class="requirements">
+            <h3>Минимальные требования</h3>
+            <div id="minReq"></div>
+
+            <h3 style="margin-top: 20px;">Рекомендуемые требования</h3>
+            <div id="recReq"></div>
+        </div>
+
+        <!-- Кнопка избранного -->
+        <button id="favoriteBtn" class="btn" style="margin: 20px auto; display: block;">❤️ Добавить в избранное</button>
+    </div>
+
+    <!-- Скрипты -->
+    <script src="lang.js"></script>
+    <script src="games.js"></script>
+    <script type="module" src="firebase.js"></script>
+    <script type="module" src="auth.js"></script>
+    <script type="module" src="api.js"></script>
+    <script type="module" src="gamePage.js"></script>
+</body>
+</html>
