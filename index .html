@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GamePulse — главная / игры</title>
+    <!-- Tesseract.js -->
+    <script src='https://unpkg.com/tesseract.js@4.0.2/dist/tesseract.min.js'></script>
+    <!-- Основные стили -->
+    <link rel="stylesheet" href="style.css">
+    <!-- Firebase import map -->
+    <script type="importmap">
+        {
+            "imports": {
+                "firebase/app": "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js",
+                "firebase/firestore": "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js",
+                "firebase/auth": "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js"
+            }
+        }
+    </script>
+    <style>
+        .password-wrapper {
+            position: relative;
+            width: 100%;
+        }
+        .password-wrapper input {
+            width: 100%;
+            padding-right: 40px;
+        }
+        .toggle-password {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            user-select: none;
+            font-size: 1.2rem;
+            color: var(--text);
+            background: transparent;
+            border: none;
+            padding: 0;
+        }
+        .toggle-password:hover {
+            color: var(--accent);
+        }
+    </style>
+</head>
+<body>
+    <canvas id="particleCanvas"></canvas>
+
+    <nav>
+        <div class="nav-left">
+            <div class="logo">⚡ GamePulse</div>
+            <div class="auth-buttons">
+                <button id="navLogin" onclick="showLoginModal()">Войти</button>
+                <button id="navProfile" onclick="showProfile()" style="display:none;">Профиль</button>
+                <button id="navLogout" onclick="logout()" style="display:none;">Выйти</button>
+            </div>
+        </div>
+        <div class="nav-center">
+            <div class="search-wrapper">
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="Поиск...">
+                    <button id="searchButton">🔍</button>
+                </div>
+                <div class="suggestions" id="suggestions"></div>
+            </div>
+        </div>
+        <div class="nav-right">
+            <ul class="nav-links">
+                <li><button id="navHome" onclick="showHome()">🏠 Главная</button></li>
+                <li class="dropdown">
+                    <button id="navGames" onclick="showGames()">🎮 Игры</button>
+                    <div class="dropdown-content">
+                        <button id="navPopular" onclick="scrollToSection('popular')">Популярные</button>
+                        <button id="navAssassins" onclick="scrollToSection('assassins')">Assassin's Creed</button>
+                        <button id="navFarcry" onclick="scrollToSection('farcry')">Far Cry</button>
+                        <button id="navGodofwar" onclick="scrollToSection('godofwar')">God of War</button>
+                        <button id="navHitman" onclick="scrollToSection('hitman')">Hitman</button>
+                        <button id="navBattlefield" onclick="scrollToSection('battlefield')">Battlefield</button>
+                        <button id="navForza" onclick="scrollToSection('forza')">Forza Horizon</button>
+                        <button id="navSimulators" onclick="scrollToSection('simulators')">Симуляторы</button>
+                    </div>
+                </li>
+                <li><button id="navFavorites" onclick="showFavorites()">⭐ Избранное</button></li>
+                <li class="nav-divider"></li>
+                <li><button id="navRandom" onclick="randomGame()">🎲 Случайная</button></li>
+                <li><button id="pcFilterBtn" onclick="togglePCFilter()">🔥 Мой ПК</button></li>
+                <li><button onclick="window.location.href='compare.html'">⚔️ Сравнить</button></li>
+                <li class="nav-divider"></li>
+                <li><button id="navSettings" onclick="showSettings()">⚙️ Настройки</button></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Главная страница -->
+    <div id="homeSection">
+        <section class="hero">
+            <h1 class="fade-up visible">GamePulse</h1>
+            <p id="heroDesc" class="fade-up visible delay-1">Твой пульс к миру игр — системные требования, описания и подборки для любого ПК.</p>
+            <button id="heroBtn" class="btn fade-up visible delay-2" onclick="showGames()">ПЕРЕЙТИ К ИГРАМ</button>
+        </section>
+
+        <section id="features" class="section">
+            <h2 id="featuresTitle" class="title fade-up">Возможности</h2>
+            <div class="features">
+                <div class="feature fade-up delay-1">
+                    <div class="feature-icon">🎮</div>
+                    <h3 id="feat1Title">Огромная коллекция</h3>
+                    <p id="feat1Desc">Более 50 игр: все части Battlefield, Far Cry, Assassin's Creed, Forza Horizon, Assetto Corsa и другие.</p>
+                </div>
+                <div class="feature fade-up delay-2">
+                    <div class="feature-icon">📊</div>
+                    <h3 id="feat2Title">Точные требования</h3>
+                    <p id="feat2Desc">Минимальные и рекомендуемые системные требования — официальные данные из Steam и от разработчиков.</p>
+                </div>
+                <div class="feature fade-up delay-3">
+                    <div class="feature-icon">🔎</div>
+                    <h3 id="feat3Title">Умный поиск</h3>
+                    <p id="feat3Desc">Мгновенная фильтрация по названию с автопрокруткой к первой найденной игре и автоподсказки.</p>
+                </div>
+                <div class="feature fade-up delay-4">
+                    <div class="feature-icon">📝</div>
+                    <h3 id="feat4Title">Детальные описания</h3>
+                    <p id="feat4Desc">К каждой игре прилагается развёрнутое описание сюжета, геймплея и особенностей, а также год выпуска и разработчик.</p>
+                </div>
+                <div class="feature fade-up delay-5">
+                    <div class="feature-icon">🎨</div>
+                    <h3 id="feat5Title">Стильный дизайн</h3>
+                    <p id="feat5Desc">Анимации при наведении, плавные переходы, 4 темы на выбор, движущийся фон с частицами.</p>
+                </div>
+                <div class="feature fade-up delay-6">
+                    <div class="feature-icon">⚡</div>
+                    <h3 id="feat6Title">Всегда с тобой</h3>
+                    <p id="feat6Desc">Сайт работает в одном файле — можно сохранить и пользоваться офлайн.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="about" class="section">
+            <h2 id="aboutTitle" class="title fade-up">О сайте</h2>
+            <div class="about-grid">
+                <div class="about-card fade-up delay-1">
+                    <h3 id="about1Title">Для кого</h3>
+                    <p id="about1Desc">GamePulse создан для геймеров, которые хотят знать, потянет ли их компьютер новинку, а также для тех, кто просто интересуется системными требованиями культовых игр.</p>
+                </div>
+                <div class="about-card fade-up delay-2">
+                    <h3 id="about2Title">Как это работает</h3>
+                    <p id="about2Desc">Мы собираем официальные данные из Steam и от разработчиков, структурируем их и добавляем подробные описания. Всё в одном месте — без лишних переходов.</p>
+                </div>
+                <div class="about-card fade-up delay-3">
+                    <h3 id="about3Title">Почему мы</h3>
+                    <p id="about3Desc">Удобный интерфейс, постоянное обновление базы, четыре темы оформления и возможность быстро найти нужную игру по названию.</p>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Страница игр -->
+    <div id="gamesSection" class="hidden">
+        <div id="pcFilterEmpty" style="display:none; text-align:center; padding: 3rem; color: var(--accent); font-size: 1.2rem;">
+            😔 Ни одна игра не подходит под ваш ПК. Попробуйте обновить железо!
+        </div>
+        <section id="popular" class="section">
+            <h2 id="popularTitle" class="title fade-up">Популярные игры</h2>
+            <div class="gallery" id="popularGallery"></div>
+        </section>
+        <section id="assassins" class="section">
+            <h2 id="assassinsTitle" class="title fade-up">Assassin's Creed</h2>
+            <div class="gallery" id="assassinsGallery"></div>
+        </section>
+        <section id="farcry" class="section">
+            <h2 id="farcryTitle" class="title fade-up">Far Cry</h2>
+            <div class="gallery" id="farcryGallery"></div>
+        </section>
+        <section id="godofwar" class="section">
+            <h2 id="godofwarTitle" class="title fade-up">God of War</h2>
+            <div class="gallery" id="godofwarGallery"></div>
+        </section>
+        <section id="hitman" class="section">
+            <h2 id="hitmanTitle" class="title fade-up">Hitman</h2>
+            <div class="gallery" id="hitmanGallery"></div>
+        </section>
+        <section id="battlefield" class="section">
+            <h2 id="battlefieldTitle" class="title fade-up">Battlefield</h2>
+            <div class="gallery" id="battlefieldGallery"></div>
+        </section>
+        <section id="forza" class="section">
+            <h2 id="forzaTitle" class="title fade-up">Forza Horizon</h2>
+            <div class="gallery" id="forzaGallery"></div>
+        </section>
+        <section id="simulators" class="section">
+            <h2 id="simulatorsTitle" class="title fade-up">Симуляторы</h2>
+            <div class="gallery" id="simulatorsGallery"></div>
+        </section>
+    </div>
+
+    <!-- Страница избранного -->
+    <div id="favoritesSection" class="hidden">
+        <section class="section">
+            <h2 class="title fade-up">Избранное</h2>
+            <div class="gallery" id="favoritesGallery"></div>
+            <div id="favoritesEmpty" class="empty-message">Здесь пока пусто. Добавьте игры в избранное, нажав на звёздочку.</div>
+        </section>
+    </div>
+
+    <!-- Страница профиля -->
+    <div id="profileSection" class="hidden">
+        <section class="section">
+            <h2 class="title fade-up">Профиль</h2>
+            <div class="profile-layout">
+
+                <!-- Левая колонка — аватар + инфо -->
+                <div class="profile-card profile-card-left">
+                    <div class="profile-avatar-wrap" onclick="openAvatarModal()" style="cursor:zoom-in;">
+                        <img id="profilePhoto" src="" alt="Avatar" class="profile-avatar">
+                        <div class="profile-avatar-placeholder" id="profileAvatarPlaceholder">👤</div>
+                    </div>
+                    <input type="file" id="photoUpload" accept="image/*" style="display:none;">
+                    <button class="btn profile-upload-btn" onclick="document.getElementById('photoUpload').click()">📷 Загрузить новое фото</button>
+                    <button class="btn profile-upload-btn" onclick="uploadProfilePhoto()" style="margin-top:0.4rem; opacity:0.8; font-size:0.85rem;">Сохранить</button>
+                    <p id="uploadStatus" class="profile-status-msg"></p>
+
+                    <div class="profile-meta">
+                        <div class="profile-meta-row">
+                            <span class="profile-meta-label">👤 Ник</span>
+                            <span id="profileDisplayName" class="profile-meta-value">—</span>
+                        </div>
+                        <div class="profile-meta-row">
+                            <span class="profile-meta-label">📧 Email</span>
+                            <span id="profileEmail" class="profile-meta-value">—</span>
+                        </div>
+                        <div class="profile-meta-row">
+                            <span class="profile-meta-label">📅 На сайте с</span>
+                            <span id="profileSince" class="profile-meta-value">—</span>
+                        </div>
+                        <div class="profile-meta-row">
+                            <span class="profile-meta-label">⭐ Избранных</span>
+                            <span id="profileFavoritesCount" class="profile-meta-value accent">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Правая колонка — редактирование -->
+                <div class="profile-card-right">
+
+                    <!-- Изменить ник -->
+                    <div class="profile-card">
+                        <h3 class="profile-card-title">✏️ Изменить никнейм</h3>
+                        <div class="profile-field-row">
+                            <input type="text" id="displayNameInput" placeholder="Новый никнейм" class="profile-input">
+                            <button class="btn" onclick="saveDisplayName()">Сохранить</button>
+                        </div>
+                        <p id="displayNameStatus" class="profile-status-msg"></p>
+                    </div>
+
+                    <!-- Сменить пароль -->
+                    <div class="profile-card">
+                        <h3 class="profile-card-title">🔒 Сменить пароль</h3>
+                        <div class="password-wrapper profile-pw-field">
+                            <input type="password" id="currentPassword" placeholder="Текущий пароль" class="profile-input">
+                            <span class="toggle-password" onclick="togglePasswordVisibility('currentPassword', this)">👁️</span>
+                        </div>
+                        <div class="password-wrapper profile-pw-field">
+                            <input type="password" id="newPassword" placeholder="Новый пароль (мин. 6 символов)" class="profile-input">
+                            <span class="toggle-password" onclick="togglePasswordVisibility('newPassword', this)">👁️</span>
+                        </div>
+                        <button class="btn" onclick="changePassword()">Сменить пароль</button>
+                        <p id="passwordStatus" class="profile-status-msg"></p>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Избранные игры -->
+            <div class="profile-favorites-section">
+                <h3 class="profile-card-title">⭐ Мои избранные игры</h3>
+                <div class="gallery" id="profileFavoritesGallery"></div>
+                <div id="profileFavoritesEmpty" class="empty-message">У вас пока нет избранных игр.</div>
+            </div>
+
+        </section>
+    </div>
+
+    <!-- Страница настроек -->
+    <div id="settingsSection" class="hidden">
+        <section class="section">
+            <h2 id="settingsTitle" class="title fade-up">Настройки</h2>
+            <div style="display: flex; gap: 2rem; justify-content: center; flex-wrap: wrap;">
+                <div style="background: var(--card-bg); padding: 2rem; border-radius: 20px; border: 1px solid var(--border-light); text-align: center; min-width: 200px;">
+                    <h3 id="langLabel" style="color: var(--accent); margin-bottom: 1.5rem;">Язык / Language</h3>
+                    <button id="langRu" class="btn" style="margin: 0.5rem auto; width: auto; min-width: 120px; padding: 0.6rem 1.5rem;" onclick="setLanguage('ru')">Русский</button>
+                    <button id="langEn" class="btn" style="margin: 0.5rem auto; width: auto; min-width: 120px; padding: 0.6rem 1.5rem;" onclick="setLanguage('en')">English</button>
+                </div>
+                <div style="background: var(--card-bg); padding: 2rem; border-radius: 20px; border: 1px solid var(--border-light); text-align: center; min-width: 200px;">
+                    <h3 style="color: var(--accent); margin-bottom: 1.5rem;">Тема / Theme</h3>
+                    <button class="btn" style="margin: 0.5rem auto; width: auto; min-width: 100px; padding: 0.6rem 1rem;" onclick="setTheme('dark')">🌙 Dark</button>
+                    <button class="btn" style="margin: 0.5rem auto; width: auto; min-width: 100px; padding: 0.6rem 1rem;" onclick="setTheme('light')">☀️ Light</button>
+                    <button class="btn" style="margin: 0.5rem auto; width: auto; min-width: 100px; padding: 0.6rem 1rem;" onclick="setTheme('neon')">🟣 Neon</button>
+                    <button class="btn" style="margin: 0.5rem auto; width: auto; min-width: 100px; padding: 0.6rem 1rem;" onclick="setTheme('matrix')">🟢 Matrix</button>
+                </div>
+            </div>
+            <div class="pc-specs">
+                <h3>🖥️ Мой ПК (для Гейм-Доктора)</h3>
+                <div class="pc-field">
+                    <label>Процессор (CPU):</label>
+                    <input type="text" id="pcCPU" placeholder="например, Intel Core i7-12700" value="">
+                </div>
+                <div class="pc-field">
+                    <label>Видеокарта (GPU):</label>
+                    <input type="text" id="pcGPU" placeholder="например, NVIDIA RTX 3060" value="">
+                </div>
+                <div class="pc-field">
+                    <label>Оперативная память (RAM, ГБ):</label>
+                    <input type="number" id="pcRAM" placeholder="16" value="">
+                </div>
+                <div class="pc-actions">
+                    <button id="savePcBtn">💾 Сохранить</button>
+                    <button id="scanScreenshotBtn">📷 Загрузить скриншот</button>
+                    <input type="file" id="screenshotInput" accept="image/*" style="display:none;">
+                </div>
+                <div id="scanStatus"></div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Модальное окно входа/регистрации -->
+    <div class="modal" id="authModal">
+        <div class="modal-content" style="max-width: 400px;">
+            <h2 id="authTitle">Вход / Регистрация</h2>
+            <div style="padding: 20px;">
+                <input type="email" id="authEmail" placeholder="Email" style="width:100%; margin-bottom:10px; padding:8px; border-radius:8px; border:1px solid var(--border-light); background: rgba(0,0,0,0.3); color: var(--text);">
+                <div class="password-wrapper" style="margin-bottom: 10px;">
+                    <input type="password" id="authPassword" placeholder="Пароль" style="width:100%; padding:8px; border-radius:8px; border:1px solid var(--border-light); background: rgba(0,0,0,0.3); color: var(--text);">
+                    <span class="toggle-password" onclick="togglePasswordVisibility('authPassword', this)">👁️</span>
+                </div>
+                <div style="display: flex; gap: 10px; justify-content: center;">
+                    <button id="authLoginBtn" class="btn" onclick="loginWithEmail()">Войти</button>
+                    <button id="authRegisterBtn" class="btn" onclick="registerWithEmail()">Регистрация</button>
+                </div>
+                <p id="authMessage" style="color: #ff7a18; margin-top: 15px; text-align: center;"></p>
+            </div>
+        </div>
+        <button class="close-btn" onclick="closeAuthModal()">Закрыть</button>
+    </div>
+
+    <!-- Модальное окно для увеличения фото -->
+    <div id="photoModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.95); backdrop-filter:blur(12px); z-index:9999; align-items:center; justify-content:center; cursor:zoom-out;" onclick="document.getElementById('photoModal').style.display='none'">
+        <img id="fullsizePhoto" src="" style="max-width:96vw; max-height:96vh; border-radius:16px; border:3px solid var(--accent); box-shadow:0 0 80px rgba(0,0,0,0.9); object-fit:contain; cursor:default;" onclick="event.stopPropagation()">
+        <button onclick="document.getElementById('photoModal').style.display='none'" style="position:absolute; top:1.5rem; right:1.5rem; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); color:#fff; font-size:1.4rem; width:44px; height:44px; border-radius:50%; cursor:pointer; backdrop-filter:blur(5px);">✕</button>
+    </div>
+
+    <footer>
+        <p id="footerText">© 2026 GamePulse — системные требования из официальных источников. Все права на изображения принадлежат правообладателям.</p>
+    </footer>
+
+    <!-- Скрипты -->
+    <script src="lang.js"></script>
+    <script src="games.js"></script>
+    <script type="module" src="firebase.js"></script>
+    <script type="module" src="auth.js"></script>
+    <script type="module" src="api.js"></script>
+    <script type="module" src="script.js"></script>
+    <script>
+        window.togglePasswordVisibility = function(inputId, eyeIcon) {
+            const input = document.getElementById(inputId);
+            if (input.type === 'password') {
+                input.type = 'text';
+                eyeIcon.textContent = '🙈';
+            } else {
+                input.type = 'password';
+                eyeIcon.textContent = '👁️';
+            }
+        };
+
+        window.openAvatarModal = function() {
+            const photo = document.getElementById('profilePhoto');
+            if (!photo || photo.style.display === 'none' || !photo.src) return;
+            const modal = document.getElementById('photoModal');
+            const fullsize = document.getElementById('fullsizePhoto');
+            fullsize.src = photo.src;
+            modal.style.display = 'flex';
+        };
+    </script>
+</body>
+</html>

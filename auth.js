@@ -1,3 +1,4 @@
+
 // auth.js
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { 
@@ -227,17 +228,21 @@ function updateProfilePage(user, base64 = null, displayName = null) {
     if (displayNameInput) {
         displayNameInput.value = displayName || '';
     }
+    const placeholder = document.getElementById('profileAvatarPlaceholder');
     if (profilePhoto) {
         if (base64) {
             profilePhoto.src = base64;
             profilePhoto.style.display = 'block';
+            if (placeholder) placeholder.style.display = 'none';
             profilePhoto.onclick = () => {
                 const fullsize = document.getElementById('fullsizePhoto');
-                fullsize.src = base64;
-                document.getElementById('photoModal').style.display = 'flex';
+                if (fullsize) fullsize.src = base64;
+                const modal = document.getElementById('photoModal');
+                if (modal) modal.style.display = 'flex';
             };
         } else {
             profilePhoto.style.display = 'none';
+            if (placeholder) placeholder.style.display = 'flex';
             profilePhoto.onclick = null;
         }
     }

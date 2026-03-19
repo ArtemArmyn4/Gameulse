@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GamePulse — Сравнение игр</title>
+    <link rel="stylesheet" href="style.css">
+    <script type="importmap">
+        {
+            "imports": {
+                "firebase/app": "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js",
+                "firebase/firestore": "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js",
+                "firebase/auth": "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js"
+            }
+        }
+    </script>
+    <style>
+        .compare-wrapper {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .compare-selectors {
+            display: flex;
+            gap: 2rem;
+            justify-content: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .compare-selector {
+            flex: 1;
+            min-width: 260px;
+            max-width: 400px;
+            background: var(--card-bg);
+            border-radius: 16px;
+            border: 1px solid var(--border-light);
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .compare-selector h3 {
+            color: var(--accent);
+            margin-bottom: 1rem;
+        }
+
+        .compare-selector select {
+            width: 100%;
+            padding: 0.7rem 1rem;
+            border-radius: 10px;
+            border: 1px solid var(--border-light);
+            background: rgba(0,0,0,0.4);
+            color: var(--text);
+            font-size: 1rem;
+            cursor: pointer;
+            outline: none;
+        }
+
+        .compare-selector select:focus {
+            border-color: var(--accent);
+        }
+
+        .compare-selector img {
+            width: 100%;
+            max-height: 160px;
+            object-fit: cover;
+            border-radius: 10px;
+            margin-top: 1rem;
+            display: none;
+        }
+
+        .compare-btn {
+            display: block;
+            margin: 0 auto 2rem;
+            padding: 0.8rem 3rem;
+            font-size: 1.1rem;
+        }
+
+        .compare-table {
+            display: none;
+            background: var(--card-bg);
+            border-radius: 20px;
+            border: 1px solid var(--border-light);
+            overflow: hidden;
+        }
+
+        .compare-row {
+            display: grid;
+            grid-template-columns: 1fr 2fr 2fr;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .compare-row:last-child {
+            border-bottom: none;
+        }
+
+        .compare-row.header {
+            background: rgba(0,0,0,0.3);
+        }
+
+        .compare-cell {
+            padding: 1rem 1.2rem;
+            border-right: 1px solid var(--border-light);
+            display: flex;
+            align-items: center;
+        }
+
+        .compare-cell:last-child {
+            border-right: none;
+        }
+
+        .compare-cell.label {
+            color: var(--accent);
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .compare-cell.header-cell {
+            font-weight: bold;
+            font-size: 1.1rem;
+            justify-content: center;
+            color: var(--accent);
+        }
+
+        .compare-cell img {
+            width: 100%;
+            border-radius: 8px;
+            max-height: 120px;
+            object-fit: cover;
+        }
+
+        .compare-cell ul {
+            margin: 0;
+            padding-left: 1.2rem;
+            font-size: 0.85rem;
+            line-height: 1.8;
+        }
+
+        .better {
+            background: rgba(0, 200, 100, 0.08);
+        }
+
+        .worse {
+            background: rgba(255, 60, 60, 0.07);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-left: 8px;
+        }
+
+        .badge.win { background: rgba(0,200,100,0.2); color: #00c864; }
+        .badge.lose { background: rgba(255,60,60,0.2); color: #ff3c3c; }
+        .badge.tie { background: rgba(150,150,150,0.2); color: #aaa; }
+
+        .rtx-yes { color: #00c864; }
+        .rtx-no { color: #888; }
+
+        @media (max-width: 700px) {
+            .compare-row {
+                grid-template-columns: 1fr;
+            }
+            .compare-cell.label {
+                background: rgba(0,0,0,0.3);
+                border-right: none;
+                border-bottom: 1px solid var(--border-light);
+            }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="particleCanvas"></canvas>
+
+    <nav>
+        <a href="index.html" style="color: var(--accent); text-decoration: none; font-size: 1.2rem; margin-left: 2rem;">⬅ На главную</a>
+        <a href="index.html#gamesSection" style="color: var(--text); text-decoration: none; font-size: 1.2rem; margin-left: 2rem;">🎮 Все игры</a>
+    </nav>
+
+    <div class="compare-wrapper">
+        <h1 class="title" style="text-align:center; margin-bottom: 2rem;">⚔️ Сравнение игр</h1>
+
+        <div class="compare-selectors">
+            <div class="compare-selector">
+                <h3>Игра 1</h3>
+                <select id="game1Select" onchange="updatePreview(1)">
+                    <option value="">— Выберите игру —</option>
+                </select>
+                <img id="preview1" src="" alt="">
+            </div>
+            <div style="display:flex; align-items:center; font-size: 2rem; color: var(--accent); font-weight: bold;">VS</div>
+            <div class="compare-selector">
+                <h3>Игра 2</h3>
+                <select id="game2Select" onchange="updatePreview(2)">
+                    <option value="">— Выберите игру —</option>
+                </select>
+                <img id="preview2" src="" alt="">
+            </div>
+        </div>
+
+        <button class="btn compare-btn" onclick="doCompare()">🔍 Сравнить</button>
+
+        <div class="compare-table" id="compareTable">
+            <!-- заполняется JS -->
+        </div>
+    </div>
+
+    <footer>
+        <p>© 2026 GamePulse — сравнение системных требований</p>
+    </footer>
+
+    <script src="lang.js"></script>
+    <script src="games.js"></script>
+    <script>
+        // Заполняем селекты
+        const sel1 = document.getElementById('game1Select');
+        const sel2 = document.getElementById('game2Select');
+
+        for (let id in games) {
+            const g = games[id];
+            const opt1 = new Option(g.title_ru, id);
+            const opt2 = new Option(g.title_ru, id);
+            sel1.appendChild(opt1);
+            sel2.appendChild(opt2);
+        }
+
+        // Применяем тему
+        const savedTheme = localStorage.getItem('gamepulse_theme') || 'dark';
+        document.body.className = savedTheme;
+
+        function updatePreview(num) {
+            const sel = document.getElementById(`game${num}Select`);
+            const img = document.getElementById(`preview${num}`);
+            const id = sel.value;
+            if (id && games[id] && games[id].image) {
+                img.src = games[id].image;
+                img.style.display = 'block';
+            } else {
+                img.style.display = 'none';
+            }
+        }
+
+        function doCompare() {
+            const id1 = sel1.value;
+            const id2 = sel2.value;
+
+            if (!id1 || !id2) {
+                alert('Выберите обе игры!');
+                return;
+            }
+            if (id1 === id2) {
+                alert('Выберите разные игры!');
+                return;
+            }
+
+            const g1 = games[id1];
+            const g2 = games[id2];
+            const table = document.getElementById('compareTable');
+
+            function badge(val1, val2, higher = true) {
+                if (val1 === val2) return ['<span class="badge tie">=</span>', '<span class="badge tie">=</span>'];
+                const w = higher ? (val1 > val2) : (val1 < val2);
+                return [
+                    w ? '<span class="badge win">✓ лучше</span>' : '<span class="badge lose">✗ хуже</span>',
+                    w ? '<span class="badge lose">✗ хуже</span>' : '<span class="badge win">✓ лучше</span>'
+                ];
+            }
+
+            function cellClass(val1, val2, higher = true) {
+                if (val1 === val2) return ['', ''];
+                const w = higher ? (val1 > val2) : (val1 < val2);
+                return [w ? 'better' : 'worse', w ? 'worse' : 'better'];
+            }
+
+            // Оценки
+            const mc1 = parseInt(g1.metacritic) || 0;
+            const mc2 = parseInt(g2.metacritic) || 0;
+            const [mcB1, mcB2] = badge(mc1, mc2);
+            const [mcC1, mcC2] = cellClass(mc1, mc2);
+
+            // Время прохождения
+            const pt1 = g1.playtime_main || 0;
+            const pt2 = g2.playtime_main || 0;
+
+            // Требовательность (меньше = легче для ПК)
+            const [pwrB1, pwrB2] = badge(g1.power_rank, g2.power_rank, false);
+            const [pwrC1, pwrC2] = cellClass(g1.power_rank, g2.power_rank, false);
+
+            table.innerHTML = `
+                <div class="compare-row header">
+                    <div class="compare-cell label"></div>
+                    <div class="compare-cell header-cell">${g1.title_ru}</div>
+                    <div class="compare-cell header-cell">${g2.title_ru}</div>
+                </div>
+
+                <div class="compare-row">
+                    <div class="compare-cell label">🖼️ Обложка</div>
+                    <div class="compare-cell"><img src="${g1.image || ''}" alt="${g1.title_ru}"></div>
+                    <div class="compare-cell"><img src="${g2.image || ''}" alt="${g2.title_ru}"></div>
+                </div>
+
+                <div class="compare-row">
+                    <div class="compare-cell label">📅 Год</div>
+                    <div class="compare-cell">${g1.year || '—'}</div>
+                    <div class="compare-cell">${g2.year || '—'}</div>
+                </div>
+
+                <div class="compare-row">
+                    <div class="compare-cell label">🏢 Разработчик</div>
+                    <div class="compare-cell">${g1.developer || '—'}</div>
+                    <div class="compare-cell">${g2.developer || '—'}</div>
+                </div>
+
+                <div class="compare-row">
+                    <div class="compare-cell label">🎮 Жанр</div>
+                    <div class="compare-cell">${(g1.genres || []).join(', ') || '—'}</div>
+                    <div class="compare-cell">${(g2.genres || []).join(', ') || '—'}</div>
+                </div>
+
+                <div class="compare-row">
+                    <div class="compare-cell label">⭐ Metacritic</div>
+                    <div class="compare-cell ${mcC1}">${mc1 || '—'} ${mc1 ? mcB1 : ''}</div>
+                    <div class="compare-cell ${mcC2}">${mc2 || '—'} ${mc2 ? mcB2 : ''}</div>
+                </div>
+
+                <div class="compare-row">
+                    <div class="compare-cell label">💬 Steam</div>
+                    <div class="compare-cell">${g1.steam || '—'}</div>
+                    <div class="compare-cell">${g2.steam || '—'}</div>
+                </div>
+
+                <div class="compare-row">
+                    <div class="compare-cell label">🎬 IGN</div>
+                    <div class="compare-cell">${g1.ign || '—'}</div>
+                    <div class="compare-cell">${g2.ign || '—'}</div>
+                </div>
+
+                <div class="compare-row">
+                    <div class="compare-cell label">⏱️ Сюжет (ч)</div>
+                    <div class="compare-cell">${pt1 || '—'}</div>
+                    <div class="compare-cell">${pt2 || '—'}</div>
+                </div>
+
+                <div class="compare-row">
+                    <div class="compare-cell label">🏆 100% (ч)</div>
+                    <div class="compare-cell">${g1.playtime_completion || '—'}</div>
+                    <div class="compare-cell">${g2.playtime_completion || '—'}</div>
+                </div>
+
+                <div class="compare-row">
+                    <div class="compare-cell label">💻 Требовательность</div>
+                    <div class="compare-cell ${pwrC1}">${g1.power_rank}/10 ${pwrB1}</div>
+                    <div class="compare-cell ${pwrC2}">${g2.power_rank}/10 ${pwrB2}</div>
+                </div>
+
+                <div class="compare-row">
+                    <div class="compare-cell label">✨ RTX</div>
+                    <div class="compare-cell ${g1.rtx_supported ? 'rtx-yes' : 'rtx-no'}">${g1.rtx_supported ? '✅ Да' : '❌ Нет'}</div>
+                    <div class="compare-cell ${g2.rtx_supported ? 'rtx-yes' : 'rtx-no'}">${g2.rtx_supported ? '✅ Да' : '❌ Нет'}</div>
+                </div>
+
+                <div class="compare-row">
+                    <div class="compare-cell label">⚙️ Мин. требования</div>
+                    <div class="compare-cell"><ul>${(g1.min || []).map(i => `<li>${i}</li>`).join('')}</ul></div>
+                    <div class="compare-cell"><ul>${(g2.min || []).map(i => `<li>${i}</li>`).join('')}</ul></div>
+                </div>
+
+                <div class="compare-row">
+                    <div class="compare-cell label">🚀 Рек. требования</div>
+                    <div class="compare-cell"><ul>${(g1.rec || []).map(i => `<li>${i}</li>`).join('')}</ul></div>
+                    <div class="compare-cell"><ul>${(g2.rec || []).map(i => `<li>${i}</li>`).join('')}</ul></div>
+                </div>
+
+                <div class="compare-row">
+                    <div class="compare-cell label">🧩 Идеальный ПК</div>
+                    <div class="compare-cell"><ul>
+                        ${g1.build ? `<li>CPU: ${g1.build.cpu}</li><li>GPU: ${g1.build.gpu}</li><li>RAM: ${g1.build.ram} GB</li>` : '—'}
+                    </ul></div>
+                    <div class="compare-cell"><ul>
+                        ${g2.build ? `<li>CPU: ${g2.build.cpu}</li><li>GPU: ${g2.build.gpu}</li><li>RAM: ${g2.build.ram} GB</li>` : '—'}
+                    </ul></div>
+                </div>
+            `;
+
+            table.style.display = 'block';
+            table.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        // Частицы (упрощённые)
+        const canvas = document.getElementById('particleCanvas');
+        if (canvas) {
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
+        }
+    </script>
+</body>
+</html>

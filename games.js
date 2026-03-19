@@ -172,7 +172,7 @@ const games = {
             gpu: 'NVIDIA RTX 2060',
             ram: 16
         },
-        trailer: 'https://www.youtube.com/embed/ehjJ614QfeM'
+        trailer: 'https://www.youtube.com/embed/A-mCKNTU_mU'
     },
     dyinglight2: {
         title_ru: 'Dying Light 2: Stay Human',
@@ -1254,4 +1254,4 @@ const games = {
         },
         trailer: 'https://www.youtube.com/embed/5uvwfskYwl0'
     }
-};
+}; 

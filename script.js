@@ -6,6 +6,7 @@ import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/fi
 let currentLang = localStorage.getItem('gamepulse_lang') || 'ru';
 let currentTheme = localStorage.getItem('gamepulse_theme') || 'dark';
 let favorites = [];
+let pcFilterActive = false;
 
 let userPC = {
     cpu: localStorage.getItem('userCPU') || '',
@@ -143,14 +144,59 @@ function renderGallery(containerId, gameIds) {
 }
 
 window.renderAllGalleries = function() {
-    renderGallery('popularGallery', ['rdr2', 'cyberpunk', 'daysgone', 'gta5', 'ghost', 'witcher3', 'dyinglight2', 'ark']);
-    renderGallery('assassinsGallery', ['ac1', 'ac2', 'acb', 'acr', 'ac3', 'ac4', 'acu', 'acs', 'aco', 'acod', 'acval']);
-    renderGallery('farcryGallery', ['fc1', 'fc2', 'fc3', 'fc4', 'fc5', 'fcnd', 'fcprimal', 'fc6']);
-    renderGallery('godofwarGallery', ['gow2018', 'gowrag']);
-    renderGallery('hitmanGallery', ['hitman2', 'hitman3']);
-    renderGallery('battlefieldGallery', ['bf3', 'bf4', 'bf1', 'bfv', 'bf2042', 'bf6']);
-    renderGallery('forzaGallery', ['fh3', 'fh4', 'fh5']);
-    renderGallery('simulatorsGallery', ['assettocorsa', 'accomp', 'ets2']);
+    const allSections = {
+        popularGallery: ['rdr2', 'cyberpunk', 'daysgone', 'gta5', 'ghost', 'witcher3', 'dyinglight2', 'ark'],
+        assassinsGallery: ['ac1', 'ac2', 'acb', 'acr', 'ac3', 'ac4', 'acu', 'acs', 'aco', 'acod', 'acval'],
+        farcryGallery: ['fc1', 'fc2', 'fc3', 'fc4', 'fc5', 'fcnd', 'fcprimal', 'fc6'],
+        godofwarGallery: ['gow2018', 'gowrag'],
+        hitmanGallery: ['hitman2', 'hitman3'],
+        battlefieldGallery: ['bf3', 'bf4', 'bf1', 'bfv', 'bf2042', 'bf6'],
+        forzaGallery: ['fh3', 'fh4', 'fh5'],
+        simulatorsGallery: ['assettocorsa', 'accomp', 'ets2']
+    };
+
+    for (let galleryId in allSections) {
+        let ids = allSections[galleryId];
+        if (pcFilterActive) {
+            const { totalScore } = evaluateSystem();
+            ids = ids.filter(id => {
+                const g = games[id];
+                return g && g.power_rank <= totalScore;
+            });
+        }
+        renderGallery(galleryId, ids);
+    }
+
+    // Показываем/скрываем секции если все игры отфильтрованы
+    if (pcFilterActive) {
+        const sectionMap = {
+            popularGallery: 'popular', assassinsGallery: 'assassins',
+            farcryGallery: 'farcry', godofwarGallery: 'godofwar',
+            hitmanGallery: 'hitman', battlefieldGallery: 'battlefield',
+            forzaGallery: 'forza', simulatorsGallery: 'simulators'
+        };
+        for (let galleryId in sectionMap) {
+            const section = document.getElementById(sectionMap[galleryId]);
+            const gallery = document.getElementById(galleryId);
+            if (section) section.style.display = gallery && gallery.children.length > 0 ? '' : 'none';
+        }
+        // Показываем сообщение если вообще ничего нет
+        let total = 0;
+        for (let galleryId in allSections) {
+            const g = document.getElementById(galleryId);
+            if (g) total += g.children.length;
+        }
+        const noGames = document.getElementById('pcFilterEmpty');
+        if (noGames) noGames.style.display = total === 0 ? 'block' : 'none';
+    } else {
+        // Восстанавливаем все секции
+        ['popular','assassins','farcry','godofwar','hitman','battlefield','forza','simulators'].forEach(id => {
+            const s = document.getElementById(id);
+            if (s) s.style.display = '';
+        });
+        const noGames = document.getElementById('pcFilterEmpty');
+        if (noGames) noGames.style.display = 'none';
+    }
 };
 
 window.renderFavorites = function() {
@@ -639,6 +685,30 @@ screenshotInput.addEventListener('change', (e) => {
     };
     reader.readAsDataURL(file);
 });
+
+window.togglePCFilter = function() {
+    // Читаем свежие данные из localStorage на случай если только что сохранили
+    userPC.cpu = localStorage.getItem('userCPU') || '';
+    userPC.gpu = localStorage.getItem('userGPU') || '';
+    userPC.ram = parseInt(localStorage.getItem('userRAM')) || 0;
+
+    if (!userPC.cpu && !userPC.gpu && !userPC.ram) {
+        alert(currentLang === 'ru'
+            ? '⚠️ Сначала заполните данные о своём ПК в Настройках!'
+            : '⚠️ Please fill in your PC specs in Settings first!');
+        return;
+    }
+    pcFilterActive = !pcFilterActive;
+    const btn = document.getElementById('pcFilterBtn');
+    if (btn) {
+        btn.textContent = pcFilterActive
+            ? (currentLang === 'ru' ? '🔥 Фильтр ВКЛ' : '🔥 Filter ON')
+            : (currentLang === 'ru' ? '🔥 Фильтр по ПК' : '🔥 PC Filter');
+        btn.style.background = pcFilterActive ? 'var(--accent)' : '';
+        btn.style.color = pcFilterActive ? '#000' : '';
+    }
+    showGames();
+};
 
 showHome();
 renderAllGalleries();
